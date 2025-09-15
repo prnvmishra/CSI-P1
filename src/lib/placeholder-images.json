@@ -1,0 +1,28 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-abstract",
+      "description": "Abstract background for hero section",
+      "imageUrl": "https://picsum.photos/seed/100/1200/800",
+      "imageHint": "abstract purple"
+    },
+    {
+      "id": "card-image-1",
+      "description": "Image for a card component",
+      "imageUrl": "https://picsum.photos/seed/101/600/400",
+      "imageHint": "tech product"
+    },
+    {
+      "id": "card-image-2",
+      "description": "Another image for a card component",
+      "imageUrl": "https://picsum.photos/seed/102/600/400",
+      "imageHint": "creative code"
+    },
+    {
+      "id": "card-image-3",
+      "description": "A third image for a card component",
+      "imageUrl": "https://picsum.photos/seed/103/600/400",
+      "imageHint": "data visualization"
+    }
+  ]
+}
