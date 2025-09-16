@@ -29,17 +29,16 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Validate required environment variables
-const missingVars = Object.entries(requiredEnvVars)
-  .filter(([_, value]) => !value)
-  .map(([key]) => key);
-
-if (missingVars.length > 0) {
-  const errorMsg = `Missing required Firebase environment variables: ${missingVars.join(', ')}`;
-  if (typeof window !== 'undefined') {
+// Check for missing environment variables in production
+if (process.env.NODE_ENV === 'production') {
+  const missingVars = Object.keys(requiredEnvVars).filter(varName => !process.env[varName]);
+  if (missingVars.length > 0) {
+    const errorMsg = `Missing required Firebase environment variables: ${missingVars.join(', ')}`;
     console.error(errorMsg);
-  } else {
-    throw new Error(errorMsg);
+    // Only throw in server-side during build
+    if (typeof window === 'undefined') {
+      throw new Error(errorMsg);
+    }
   }
 }
 
