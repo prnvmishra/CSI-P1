@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { Loader2, BarChart2, PieChart as PieChartIcon, Clock, Calendar, Palette } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { getDocs, collection, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
+import { getUserThemeStats } from '@/lib/theme-history';
 
 const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#00ff00', '#ff00ff', '#00ffff'];
 
@@ -30,8 +31,47 @@ interface PromptHistoryEntry {
 }
 
 export function AnalyticsDashboard() {
+  interface ThemeStat {
+    themeId: string;
+    themeName: string;
+    name: string;
+    count: number;
+  }
+
   const [themeHistory, setThemeHistory] = useState<ThemeHistoryEntry[]>([]);
+  const [themeStats, setThemeStats] = useState<ThemeStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('themes');
+
+  const fetchThemeHistory = async () => {
+    if (!auth.currentUser) return [];
+    
+    try {
+      const themeQuery = query(
+        collection(db, 'themeHistory'),
+        where('userId', '==', auth.currentUser.uid),
+        orderBy('timestamp', 'desc')
+      );
+      const themeSnapshot = await getDocs(themeQuery);
+      return themeSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ThemeHistoryEntry[];
+    } catch (error) {
+      console.error('Error fetching theme history:', error);
+      return [];
+    }
+  };
+
+  const fetchThemeStats = async () => {
+    try {
+      const stats = await getUserThemeStats();
+      return stats;
+    } catch (error) {
+      console.error('Error fetching theme stats:', error);
+      return [];
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -39,19 +79,13 @@ export function AnalyticsDashboard() {
       
       setLoading(true);
       try {
-        // Fetch theme history
-        const themeQuery = query(
-          collection(db, 'themeHistory'),
-          where('userId', '==', auth.currentUser.uid),
-          orderBy('timestamp', 'desc')
-        );
-        const themeSnapshot = await getDocs(themeQuery);
-        const themes = themeSnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as ThemeHistoryEntry[];
-        setThemeHistory(themes);
-
+        const [history, stats] = await Promise.all([
+          fetchThemeHistory(),
+          fetchThemeStats()
+        ]);
+        
+        setThemeHistory(history);
+        setThemeStats(stats);
       } catch (error) {
         console.error('Error fetching analytics data:', error);
       } finally {
@@ -62,16 +96,13 @@ export function AnalyticsDashboard() {
     fetchData();
   }, []);
 
-  // Process theme data for charts
-  const themeStats = themeHistory.reduce((acc, entry) => {
-    const existing = acc.find(item => item.name === entry.themeName);
-    if (existing) {
-      existing.count++;
-    } else {
-      acc.push({ name: entry.themeName, count: 1 });
-    }
-    return acc;
-  }, [] as Array<{name: string, count: number}>).sort((a, b) => b.count - a.count);
+  // Format theme stats for charts
+  const chartData = themeStats.map(stat => ({
+    name: stat.themeName,
+    themeName: stat.themeName,
+    count: stat.count,
+    themeId: stat.themeId
+  }));
 
   if (loading) {
     return (
@@ -153,45 +184,71 @@ export function AnalyticsDashboard() {
             <Card>
               <CardHeader>
                 <CardTitle>Theme Usage</CardTitle>
+                <p className="text-sm text-muted-foreground">Your most used themes</p>
               </CardHeader>
               <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={themeStats.slice(0, 5)}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#8884d8" />
-                  </BarChart>
-                </ResponsiveContainer>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="themeName" />
+                      <YAxis />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: 'var(--radius)'
+                        }}
+                      />
+                      <Bar dataKey="count" fill="#8884d8" name="Uses" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <p className="text-muted-foreground">No theme usage data available</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
             <Card>
               <CardHeader>
                 <CardTitle>Theme Distribution</CardTitle>
+                <p className="text-sm text-muted-foreground">Distribution of your theme usage</p>
               </CardHeader>
               <CardContent className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={themeStats}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="count"
-                      label={({ name, percent }) => 
-                        `${name}: ${(percent * 100).toFixed(0)}%`
-                      }
-                    >
-                      {themeStats.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                {chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={chartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="count"
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      >
+                        {chartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        formatter={(value, name, props) => [`${value} uses`, props.payload.name]} 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--background))',
+                          borderColor: 'hsl(var(--border))',
+                          borderRadius: 'var(--radius)'
+                        }}
+                      />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <p className="text-muted-foreground">No theme usage data available</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

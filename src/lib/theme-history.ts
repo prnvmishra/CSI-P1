@@ -75,7 +75,7 @@ export async function getUserThemeHistory(): Promise<ThemeHistoryEntry[]> {
 }
 
 // Get theme usage statistics for the current user
-export async function getUserThemeStats(): Promise<{themeId: string, themeName: string, count: number}[]> {
+export async function getUserThemeStats(limit: number = 5): Promise<{themeId: string, themeName: string, name: string, count: number}[]> {
   try {
     const history = await getUserThemeHistory();
     
@@ -83,14 +83,21 @@ export async function getUserThemeStats(): Promise<{themeId: string, themeName: 
     const themeCounts = history.reduce((acc, entry) => {
       const { themeId, themeName } = entry;
       if (!acc[themeId]) {
-        acc[themeId] = { themeId, themeName, count: 0 };
+        acc[themeId] = { 
+          themeId, 
+          themeName, 
+          name: themeName, // Add name property for consistency
+          count: 0 
+        };
       }
       acc[themeId].count++;
       return acc;
-    }, {} as Record<string, {themeId: string, themeName: string, count: number}>);
+    }, {} as Record<string, {themeId: string, themeName: string, name: string, count: number}>);
     
-    // Convert to array and sort by count (descending)
-    return Object.values(themeCounts).sort((a, b) => b.count - a.count);
+    // Convert to array, sort by count (descending) and limit results
+    return Object.values(themeCounts)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
   } catch (error) {
     console.error('Error getting theme stats:', error);
     return [];

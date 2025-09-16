@@ -20,23 +20,36 @@ export function ThemeToggle() {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Map of theme types to their display names
+  const themeDisplayNames: Record<string, string> = {
+    'light': 'Light',
+    'dark': 'Dark',
+    'system': 'System',
+    'default': 'Professional',
+    'vibrant': 'Creative Designer',
+    'data-centric': 'Data Analyst',
+    'code-style': 'Web Developer',
+    'smooth-gradient': 'UX/UI Designer'
+  };
+
   const handleThemeChange = async (theme: string) => {
     try {
       setTheme(theme);
       
       if (user) {
-        // Map the theme to a valid theme ID from constants
-        let themeToRecord = theme;
-        if (['light', 'dark', 'system'].includes(theme)) {
-          // For light/dark/system, use a default theme ID
-          themeToRecord = 'underwater'; // or any other default theme ID
+        // Only record theme changes for non-system themes
+        if (!['light', 'dark', 'system'].includes(theme)) {
+          await recordThemeSelection(theme);
+          toast({
+            title: 'Theme updated',
+            description: `Switched to ${themeDisplayNames[theme] || theme} theme`,
+          });
+        } else {
+          toast({
+            title: 'Theme updated',
+            description: `Switched to ${themeDisplayNames[theme] || theme} mode`,
+          });
         }
-        
-        await recordThemeSelection(themeToRecord);
-        toast({
-          title: 'Theme updated',
-          description: `Switched to ${theme} theme`,
-        });
       }
     } catch (error) {
       console.error('Error changing theme:', error);

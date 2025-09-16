@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { recordThemeSelection } from './theme-history';
 
 export type ThemeType = 'default' | 'vibrant' | 'data-centric' | 'code-style' | 'smooth-gradient';
 
@@ -332,7 +333,17 @@ export const themes: Record<ThemeType, ThemeConfig> = {
 };
 
 export function useThemeManager(theme: ThemeType) {
+  const [previousTheme, setPreviousTheme] = useState<ThemeType | null>(null);
+  
   useEffect(() => {
+    // Only log theme changes, not initial load
+    if (previousTheme && previousTheme !== theme) {
+      // Log the theme change
+      recordThemeSelection(theme).catch((error: Error) => {
+        console.error('Failed to log theme change:', error);
+      });
+    }
+    
     // Clean up previous theme effects
     Object.values(themes).forEach((t) => {
       if (t.cleanupEffects) t.cleanupEffects();
@@ -344,13 +355,16 @@ export function useThemeManager(theme: ThemeType) {
       currentTheme.applyEffects();
     }
 
+    // Update previous theme
+    setPreviousTheme(theme);
+
     // Clean up on unmount
     return () => {
       if (currentTheme.cleanupEffects) {
         currentTheme.cleanupEffects();
       }
     };
-  }, [theme]);
+  }, [theme, previousTheme]);
 }
 
 export function getThemeClass(theme: ThemeType): string {

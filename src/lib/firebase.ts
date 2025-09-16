@@ -4,16 +4,34 @@ import { getFirestore, connectFirestoreEmulator, Firestore } from "firebase/fire
 import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
-// Firebase configuration
+// Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyAS_vynwdrLUcyGKwHDQ2X5d6_7B36D6XQ",
-  authDomain: "studio-3416878682-1164f.firebaseapp.com",
-  projectId: "studio-3416878682-1164f",
-  storageBucket: "studio-3416878682-1164f.firebasestorage.app",
-  messagingSenderId: "954287430091",
-  appId: "1:954287430091:web:5284c3d1726c6fd56cfe4e",
-  measurementId: "G-XXXXXXXXXX"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
+
+// Validate Firebase config
+const requiredEnvVars = [
+  'NEXT_PUBLIC_FIREBASE_API_KEY',
+  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+  'NEXT_PUBLIC_FIREBASE_APP_ID'
+];
+
+// Check for missing environment variables
+if (typeof window === 'undefined') { // Only run on server
+  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+  if (missingVars.length > 0) {
+    console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
+  }
+}
 
 // Enable offline persistence
 export const enablePersistence = async () => {

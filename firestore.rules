@@ -3,8 +3,18 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // Allow users to read and write their own theme history
     match /themeHistory/{document} {
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      // Allow read if user is authenticated and the document belongs to them
+      allow read: if request.auth != null && 
+                 request.auth.uid == resource.data.userId;
+      
+      // Allow create if user is authenticated and the document is being created with their UID
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId &&
+                   request.resource.data.keys().hasAll(['themeId', 'themeName', 'timestamp', 'userId']) &&
+                   request.resource.data.themeId is string &&
+                   request.resource.data.themeName is string &&
+                   request.resource.data.timestamp is timestamp &&
+                   request.resource.data.userId is string;
     }
     
     // User profiles - allow public read, private write
