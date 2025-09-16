@@ -5,7 +5,7 @@ import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
 import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
 
 // Firebase configuration from environment variables
-const firebaseConfig = {
+const requiredEnvVars = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -15,19 +15,49 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// Validate Firebase config
-const requiredEnvVars = [
-  'NEXT_PUBLIC_FIREBASE_API_KEY',
-  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-  'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
-  'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-  'NEXT_PUBLIC_FIREBASE_APP_ID'
-];
+// Log configuration status
+if (typeof window !== 'undefined') {
+  console.log('Firebase Config Status:', {
+    ...Object.fromEntries(
+      Object.entries(requiredEnvVars).map(([key, value]) => [
+        key,
+        value ? (key.includes('Key') ? '***' : value) : 'MISSING'
+      ])
+    ),
+    environment: process.env.NODE_ENV,
+    isClient: typeof window !== 'undefined',
+  });
+}
 
-// Check for missing environment variables
-if (typeof window === 'undefined') { // Only run on server
-  const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+// Validate required environment variables
+const missingVars = Object.entries(requiredEnvVars)
+  .filter(([_, value]) => !value)
+  .map(([key]) => key);
+
+if (missingVars.length > 0) {
+  const errorMsg = `Missing required Firebase environment variables: ${missingVars.join(', ')}`;
+  if (typeof window !== 'undefined') {
+    console.error(errorMsg);
+  } else {
+    throw new Error(errorMsg);
+  }
+}
+
+const firebaseConfig = requiredEnvVars;
+
+// Additional server-side environment variable validation
+if (typeof window === 'undefined') {
+  const envVarNames = [
+    'NEXT_PUBLIC_FIREBASE_API_KEY',
+    'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
+    'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
+    'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
+    'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+    'NEXT_PUBLIC_FIREBASE_APP_ID',
+    'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID'
+  ];
+  
+  const missingVars = envVarNames.filter((varName: string) => !process.env[varName]);
   if (missingVars.length > 0) {
     console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
   }
