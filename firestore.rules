@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow users to read and write their own theme history
+    match /themeHistory/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // User profiles - allow public read, private write
+    match /users/{userId} {
+      allow read: if true;  // Anyone can read profiles
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update, delete: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Posts collection - public read, authenticated write
+    match /posts/{postId} {
+      allow read: if true;  // Anyone can read posts
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && 
+                           request.auth.uid == resource.data.userId;
+    }
+    
+    // Comments subcollection
+    match /posts/{postId}/comments/{commentId} {
+      allow read: if true;  // Anyone can read comments
+      allow create: if request.auth != null &&
+                   request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && 
+                           request.auth.uid == resource.data.userId;
+    }
+    
+    // Likes subcollection
+    match /posts/{postId}/likes/{likeId} {
+      allow read: if true;  // Anyone can see likes
+      allow create, delete: if request.auth != null && 
+                           request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Followers/Following relationships
+    match /followers/{userId}/{followerId} {
+      allow read: if true;  // Anyone can see followers
+      allow create, delete: if request.auth != null && 
+                           (request.auth.uid == userId || request.auth.uid == followerId);
+    }
+    
+    match /following/{userId}/{followingId} {
+      allow read: if true;  // Anyone can see who someone is following
+      allow create, delete: if request.auth != null && 
+                           (request.auth.uid == userId || request.auth.uid == followingId);
+    }
+    
+    // Allow users to read and write their own prompt history
+    match /promptHistory/{document} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // User progress tracking (XP, achievements, etc.)
+    match /userProgress/{userId} {
+      // Users can read and write their own progress
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Default deny all other access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
