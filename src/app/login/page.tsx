@@ -1,13 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { z } from 'zod';
+import { auth } from '@/lib/firebase-client';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { auth } from '@/lib/firebase';
 import { useAuth } from '@/hooks/use-auth';
+import * as z from 'zod';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -58,9 +57,29 @@ const FormError = ({ message }: { message: string }) => (
 );
 
 export default function LoginPage() {
+  const [isLogin, setIsLogin] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(false);
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const { toast } = useToast();
-  const { signIn, signUp, loading: authLoading } = useAuth();
+
+  // Initialize auth on client-side only
+  const [auth, setAuth] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return getAuth(app);
+    }
+    return null;
+  });
+
+  useEffect(() => {
+    setAuthInitialized(true);
+  }, []);
+
+  if (loading || !authInitialized) {
+    return <div>Loading...</div>;
+  }
+
   const [activeTab, setActiveTab] = useState('login');
 
   const loginForm = useForm<LoginFormValues>({

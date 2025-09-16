@@ -86,25 +86,38 @@ export const enablePersistence = async () => {
   }
 };
 
-// Initialize Firebase with proper types
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let analytics: Analytics | undefined;
+// Initialize Firebase only in browser environment
+let app;
+let auth;
+let db;
+let analytics;
+let storage;
 
-// Initialize Firebase
-try {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  
-  // Initialize Firestore with settings
-  db = getFirestore(app);
-  
-  // Enable offline persistence with error handling
-  if (typeof window !== 'undefined') {
-    import('firebase/firestore').then(({ enableIndexedDbPersistence }) => {
-      enableIndexedDbPersistence(db, {
-        forceOwnership: false
+if (typeof window !== 'undefined') {
+  try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    analytics = getAnalytics(app);
+    storage = getStorage(app);
+  } catch (error) {
+    console.error('Firebase initialization error:', error);
+  }
+}
+
+// Enable offline persistence with error handling
+if (typeof window !== 'undefined') {
+  import('firebase/firestore').then(({ enableIndexedDbPersistence }) => {
+    enableIndexedDbPersistence(db, {
+      forceOwnership: false
+    }).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.warn('Persistence failed: Multiple tabs open, persistence can only be enabled in one tab at a time.');
+      } else if (err.code === 'unimplemented') {
+        console.warn('Persistence not supported: The current browser does not support all required features.');
+      } else {
+        console.error('Persistence error:', err);
+      }
       }).catch((err) => {
         if (err.code === 'failed-precondition') {
           console.warn('Persistence failed: Multiple tabs open, persistence can only be enabled in one tab at a time.');
