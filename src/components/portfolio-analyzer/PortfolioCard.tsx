@@ -174,7 +174,7 @@ export function PortfolioCard({ data, onApplyTheme }: PortfolioCardProps) {
                   <ExternalLink className="w-4 h-4 mr-2" />
                   Apply {data.theme.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} Theme
                 </span>
-                <span className="absolute inset-0 bg-gradient-to-r from-primary/80 to-primary/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-md" />
+                {/* Removed gradient overlay */}
               </Button>
             </motion.div>
           </CardFooter>
