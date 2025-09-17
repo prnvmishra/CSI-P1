@@ -1,173 +1,40 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
-import { getAuth, connectAuthEmulator, Auth } from "firebase/auth";
-import { getFirestore, connectFirestoreEmulator, Firestore } from "firebase/firestore";
-import { getAnalytics, isSupported, Analytics } from "firebase/analytics";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
-// Firebase configuration from environment variables
-const requiredEnvVars = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyAS_vynwdrLUcyGKwHDQ2X5d6_7B36D6XQ",
+  authDomain: "studio-3416878682-1164f.firebaseapp.com",
+  projectId: "studio-3416878682-1164f",
+  storageBucket: "studio-3416878682-1164f.appspot.com", // Fixed the storage bucket URL
+  messagingSenderId: "954287430091",
+  appId: "1:954287430091:web:5284c3d1726c6fd56cfe4e"
 };
 
-// Log configuration status
-if (typeof window !== 'undefined') {
-  console.log('Firebase Config Status:', {
-    ...Object.fromEntries(
-      Object.entries(requiredEnvVars).map(([key, value]) => [
-        key,
-        value ? (key.includes('Key') ? '***' : value) : 'MISSING'
-      ])
-    ),
-    environment: process.env.NODE_ENV,
-    isClient: typeof window !== 'undefined',
-  });
-}
-
-// Skip environment variable check during build
-if (process.env.NEXT_PHASE !== 'phase-production-build') {
-  const missingVars = Object.keys(requiredEnvVars).filter(varName => !process.env[varName]);
-  if (missingVars.length > 0) {
-    const errorMsg = `Missing required Firebase environment variables: ${missingVars.join(', ')}`;
-    console.warn(errorMsg);
-    
-    // Only throw in production runtime, not during build
-    if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
-      console.error('FATAL: Missing required Firebase configuration');
-      // Don't throw to allow build to complete
-    }
-  }
-}
-
-// Fallback config to prevent build failures
-const firebaseConfig = Object.keys(requiredEnvVars).reduce((acc, key) => {
-  acc[key] = process.env[key] || '';
-  return acc;
-}, {} as Record<string, string>);
-
-// Additional server-side environment variable validation
-if (typeof window === 'undefined') {
-  const envVarNames = [
-    'NEXT_PUBLIC_FIREBASE_API_KEY',
-    'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-    'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-    'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET',
-    'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-    'NEXT_PUBLIC_FIREBASE_APP_ID',
-    'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID'
-  ];
-  
-  const missingVars = envVarNames.filter((varName: string) => !process.env[varName]);
-  if (missingVars.length > 0) {
-    console.error(`Missing required environment variables: ${missingVars.join(', ')}`);
-  }
-}
-
-// Enable offline persistence
-export const enablePersistence = async () => {
-  if (typeof window !== 'undefined') {
-    try {
-      const { enableIndexedDbPersistence } = await import('firebase/firestore');
-      await enableIndexedDbPersistence(db!).catch((err) => {
-        if (err.code === 'failed-precondition') {
-          console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
-        } else if (err.code === 'unimplemented') {
-          console.warn('The current browser does not support all of the features required to enable persistence.');
-        }
-      });
-    } catch (error) {
-      console.error('Error enabling Firestore persistence:', error);
-    }
-  }
-};
-
-// Initialize Firebase only in browser environment
+// Initialize Firebase
 let app;
 let auth;
 let db;
-let analytics;
 let storage;
 
-if (typeof window !== 'undefined') {
-  try {
-    app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    analytics = getAnalytics(app);
-    storage = getStorage(app);
-  } catch (error) {
-    console.error('Firebase initialization error:', error);
-  }
-}
-
-// Enable offline persistence with error handling
-if (typeof window !== 'undefined') {
-  import('firebase/firestore').then(({ enableIndexedDbPersistence }) => {
-    enableIndexedDbPersistence(db, {
-      forceOwnership: false
-    }).catch((err) => {
-      if (err.code === 'failed-precondition') {
-        console.warn('Persistence failed: Multiple tabs open, persistence can only be enabled in one tab at a time.');
-      } else if (err.code === 'unimplemented') {
-        console.warn('Persistence not supported: The current browser does not support all required features.');
-      } else {
-        console.error('Persistence error:', err);
-      }
-      }).catch((err) => {
-        if (err.code === 'failed-precondition') {
-          console.warn('Persistence failed: Multiple tabs open, persistence can only be enabled in one tab at a time.');
-        } else if (err.code === 'unimplemented') {
-          console.warn('Persistence not supported: The current browser does not support all required features.');
-        } else {
-          console.error('Persistence error:', err);
-        }
-      });
-    }).catch(error => {
-      console.error('Error loading Firestore persistence module:', error);
-    });
-  }
-
-  // Initialize Analytics if in production
-  if (process.env.NODE_ENV === 'production') {
-    isSupported().then(yes => yes && (analytics = getAnalytics(app)));
+// Only initialize on client side
+try {
+  app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  storage = getStorage(app);
+  
+  if (typeof window !== 'undefined') {
+    console.log('Firebase initialized successfully');
   }
 } catch (error) {
   console.error('Firebase initialization error:', error);
-  throw error; // Re-throw to prevent silent failures
-}
-
-// Use emulators in development
-if (process.env.NODE_ENV === 'development') {
-  try {
-    // Only connect to emulators if not already connected
-    if (!(global as any).emulatorsStarted) {
-      try {
-        // Connect to Firestore emulator on port 8081
-        connectFirestoreEmulator(db, 'localhost', 8081);
-        // Connect to Auth emulator on port 9099
-        connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
-        (global as any).emulatorsStarted = true;
-        console.log('Connected to Firebase emulators');
-      } catch (error) {
-        console.error('Failed to connect to emulators:', error);
-      }
-    }
-  } catch (error) {
-    console.error('Emulator connection error:', error);
+  if (typeof window !== 'undefined') {
+    console.error('Firebase initialization failed. Please check your configuration.');
   }
 }
 
-// Initialize App Check in production
-if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
-    isTokenAutoRefreshEnabled: true
-  });
-}
-
-export { app, auth, db, analytics };
+// Export initialized services
+export { app, auth, db, storage, getAuth };
