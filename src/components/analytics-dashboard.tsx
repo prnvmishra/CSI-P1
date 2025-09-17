@@ -49,14 +49,20 @@ export function AnalyticsDashboard() {
     try {
       const themeQuery = query(
         collection(db, 'themeHistory'),
-        where('userId', '==', auth.currentUser.uid),
-        orderBy('timestamp', 'desc')
+        where('userId', '==', auth.currentUser.uid)
       );
       const themeSnapshot = await getDocs(themeQuery);
-      return themeSnapshot.docs.map(doc => ({
+      const entries = themeSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as ThemeHistoryEntry[];
+      
+      // Sort in memory by timestamp in descending order
+      return entries.sort((a, b) => {
+        const timeA = a.timestamp?.toMillis() || 0;
+        const timeB = b.timestamp?.toMillis() || 0;
+        return timeB - timeA;
+      });
     } catch (error) {
       console.error('Error fetching theme history:', error);
       return [];

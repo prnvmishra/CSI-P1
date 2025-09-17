@@ -52,8 +52,7 @@ export async function getUserThemeHistory(): Promise<ThemeHistoryEntry[]> {
     const themeHistoryRef = collection(db, 'themeHistory');
     const q = query(
       themeHistoryRef, 
-      where('userId', '==', user.uid),
-      orderBy('timestamp', 'desc')
+      where('userId', '==', user.uid)
     );
     
     const querySnapshot = await getDocs(q);
@@ -65,6 +64,13 @@ export async function getUserThemeHistory(): Promise<ThemeHistoryEntry[]> {
         id: doc.id,
         ...data
       });
+    });
+    
+    // Sort in memory by timestamp in descending order
+    history.sort((a, b) => {
+      const timeA = a.timestamp?.seconds || 0;
+      const timeB = b.timestamp?.seconds || 0;
+      return timeB - timeA;
     });
     
     return history;
