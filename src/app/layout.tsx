@@ -5,44 +5,10 @@ import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/hooks/use-auth';
 import { MainNav } from '@/components/main-nav';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { ErrorBoundary } from '@/components/error-boundary';
 import Link from 'next/link';
-import { Sparkles, AlertCircle } from 'lucide-react';
-import { ErrorBoundary } from 'react-error-boundary';
+import { Sparkles } from 'lucide-react';
 
-function ErrorFallback({ error, resetErrorBoundary }: { error: Error, resetErrorBoundary: () => void }) {
-  return (
-    <div role="alert" className="min-h-screen flex items-center justify-center p-4">
-      <div className="max-w-md w-full p-6 rounded-lg border border-destructive/20 bg-destructive/5">
-        <div className="flex items-center gap-2 text-destructive mb-4">
-          <AlertCircle className="h-5 w-5" />
-          <h2 className="text-lg font-semibold">Something went wrong</h2>
-        </div>
-        <p className="text-sm text-muted-foreground mb-4">
-          {error.message || 'An unexpected error occurred'}
-        </p>
-        <button
-          onClick={resetErrorBoundary}
-          className="text-sm px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-        >
-          Try Again
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ErrorBoundaryWrapper({ children }: { children: React.ReactNode }) {
-  return (
-    <ErrorBoundary
-      FallbackComponent={ErrorFallback}
-      onError={(error: Error) => {
-        console.error('Error caught by error boundary:', error);
-      }}
-    >
-      {children}
-    </ErrorBoundary>
-  );
-}
 
 export const metadata: Metadata = {
   title: 'Promptalizer',
@@ -84,9 +50,9 @@ export default function RootLayout({
               </div>
             </header>
             <main className="flex-1">
-              <ErrorBoundaryWrapper>
+              <ErrorBoundary>
                 {children}
-              </ErrorBoundaryWrapper>
+              </ErrorBoundary>
             </main>
             <Toaster />
           </AuthProvider>
